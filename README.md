@@ -36,7 +36,8 @@ By default the script waits until the lap number changes, records that whole lap
 laps/gt7_lap_<timestamp>.json
 ```
 
-The JSON contains `metadata` and `samples`. Each sample includes convenient fields such as speed, RPM, gear, throttle, brake, position, tire data, and a `raw` object with all telemetry fields exposed by `gt-telem`.
+The JSON contains `metadata` and `samples`. Each sample includes convenient
+fields such as speed, RPM, gear, throttle, brake, position, and tire data.
 
 ## Options
 
@@ -58,6 +59,44 @@ Start recording the current lap immediately:
 .venv/bin/python main.py --include-current
 ```
 
+Record a replay that starts before the hot lap:
+
+```bash
+uv run python main.py --replay
+```
+
+In replay mode the recorder waits for the first lap change, starts recording
+there, and saves only after the next lap change. This avoids saving the replay
+pre-roll before the hot lap.
+
+Add a readable prefix to the output filename:
+
+```bash
+uv run python main.py --replay --name "Porsche 911 Spa"
+```
+
+This writes a file like:
+
+```text
+laps/Porsche_911_Spa_gt7_lap_<timestamp>.json
+```
+
+The name is also saved as `metadata.name`.
+
+By default incomplete laps are not saved. To save whatever was captured when you
+press `Ctrl-C` or hit the timeout, opt in explicitly:
+
+```bash
+uv run python main.py --replay --save-partial
+```
+
+By default samples do not include the full raw `gt-telem` object, because it
+significantly increases file size. Include it only when needed for debugging:
+
+```bash
+uv run python main.py --replay --include-raw
+```
+
 Increase or reduce the maximum wait time:
 
 ```bash
@@ -69,6 +108,17 @@ Show all options:
 ```bash
 .venv/bin/python main.py --help
 ```
+
+## Project layout
+
+- `main.py` is only a thin command entrypoint.
+- `gt7_telemetry/cli.py` owns CLI parsing and converts flags into config.
+- `gt7_telemetry/recorder.py` owns the recording loop and lap state.
+- `gt7_telemetry/decoder.py` wraps `gt-telem` packet decoding.
+- `gt7_telemetry/samples.py` defines the compact per-frame JSON shape.
+- `gt7_telemetry/output.py` builds and writes lap JSON payloads.
+- `gt7_telemetry/paths.py` handles output filename generation.
+- `gt7_telemetry/config.py` contains ports, defaults, and `RecorderConfig`.
 
 ## Troubleshooting
 
